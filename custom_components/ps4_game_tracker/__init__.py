@@ -87,36 +87,30 @@ class Tracker:
 
     @callback
     def on_change(self, event):
-        state = event.data.get("new_state")
-        if state and state.state == "playing":
-            title = state.attributes.get("media_title") or "Unbekanntes Spiel"
-            if self.active and self.active["title"] == title:
-                return
-            if self.active:
-                self.hass.async_create_task(self.switch(title))
-            else:
-                self.hass.async_create_task(self.start_locked(title))
-        elif self.active:
-            self.hass.async_create_task(self.finish_locked())
-        else:
-            self.notify()
+        """Queue a reconciliation against the latest media-player state."""
+        self.hass.async_create_task(self.reconcile())
 
-    async def start_locked(self, title):
+    async def reconcile(self):
+        """Serialize transitions and inspect the current state under the lock.
+
+        Avoid acting on stale queued events when games change rapidly.
+        An unavailable/unknown state is not proof that gameplay ended.
+        """
         async with self._transition_lock:
-            if not self.active:
+            state = self.hass.states.get(self.entity_id)
+            if state is None or state.state in ("unknown", "unavailable"):
+                return
+            if state.state == "playing":
+                title = state.attributes.get("media_title") or "Unbekanntes Spiel"
+                if self.active and self.active["title"] == title:
+                    return
+                if self.active:
+                    await self.finish()
                 await self.start(title)
-
-    async def finish_locked(self):
-        async with self._transition_lock:
-            await self.finish()
-
-    async def switch(self, title):
-        async with self._transition_lock:
-            if self.active and self.active["title"] == title:
-                return
-            if self.active:
+            elif self.active:
                 await self.finish()
-            await self.start(title)
+            else:
+                self.notify()
 
     def notify(self):
         for listener in list(self.listeners):
