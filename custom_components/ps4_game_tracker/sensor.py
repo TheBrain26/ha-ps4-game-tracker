@@ -20,6 +20,7 @@ class BaseSensor(SensorEntity):
         self.tracker = tracker
         self._attr_unique_id = f"{tracker.entry.entry_id}_{key}"
         self._attr_name = label
+        self._attr_suggested_object_id = f"ps4_game_tracker_{key if key not in PERIODS else 'spielzeit_' + {'today': 'heute', 'week': 'woche', 'month': 'monat', 'year': 'jahr'}[key]}"
         self._attr_should_poll = False
 
     async def async_added_to_hass(self):
@@ -43,7 +44,7 @@ class PlaytimeSensor(BaseSensor):
 class LastGameSensor(BaseSensor):
     _attr_icon = "mdi:gamepad-variant"
     def __init__(self, tracker):
-        super().__init__(tracker, "last_game", "Letztes Spiel")
+        super().__init__(tracker, "letztes_spiel", "Letztes Spiel")
     @property
     def native_value(self):
         return self.tracker.sessions[-1]["title"] if self.tracker.sessions else "Kein Spiel erfasst"
@@ -52,7 +53,7 @@ class LastDurationSensor(BaseSensor):
     _attr_icon = "mdi:timer"
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
     def __init__(self, tracker):
-        super().__init__(tracker, "last_duration", "Letzte Spieldauer")
+        super().__init__(tracker, "letzte_spieldauer", "Letzte Spieldauer")
     @property
     def native_value(self):
         return round(self.tracker.sessions[-1]["minutes"], 1) if self.tracker.sessions else 0
@@ -60,7 +61,7 @@ class LastDurationSensor(BaseSensor):
 class HistorySensor(BaseSensor):
     _attr_icon = "mdi:history"
     def __init__(self, tracker):
-        super().__init__(tracker, "history", "Spielverlauf")
+        super().__init__(tracker, "spielverlauf", "Spielverlauf")
     @property
     def native_value(self):
         return f"{len(self.tracker.sessions)} Sitzungen"
