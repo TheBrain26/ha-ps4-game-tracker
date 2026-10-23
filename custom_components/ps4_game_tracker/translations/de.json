@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "PS4 Game Tracker",
+        "description": "Wähle den PS4-Mediaplayer aus.",
+        "data": {
+          "media_player": "PS4-Mediaplayer"
+        }
+      }
+    }
+  }
+}
