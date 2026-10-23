@@ -1,128 +1,137 @@
-# PS4 Game Tracker for Home Assistant
+# PS4 Game Tracker für Home Assistant
 
-Custom Home Assistant integration for PlayStation 4 gaming sessions, playtime statistics and an optional Lovelace dashboard.
+Benutzerdefinierte Home-Assistant-Integration zur Erfassung von PlayStation-4-Spielsitzungen und Spielzeiten – mit einer optionalen Dashboardvorlage.
 
-> **Development preview – not released or tested in a live Home Assistant instance.** Keep your existing PS4 automations and helpers running until the new implementation is validated.
+> **Testversion – noch nicht im laufenden Home-Assistant-Betrieb validiert.** Bestehende PS4-Automationen und Helfer vorerst beibehalten, bis die neue Integration erfolgreich getestet wurde.
 
-## Status (October 2026)
+## Funktionsumfang
 
-The development branch includes:
+- Einrichtung über die Benutzeroberfläche von Home Assistant
+- Auswahl eines vorhandenen PS4-Mediaplayers
+- Spielzeit für heute, die aktuelle Woche, den aktuellen Monat und das aktuelle Jahr
+- Anzeige des letzten Spiels und der letzten Spieldauer
+- Spielverlauf
+- Binärsensor für eine aktive Spielsitzung
+- Speicherung laufender Sitzungen im Minutentakt
+- Wiederherstellung gespeicherter Spielzeit nach einem Neustart
+- Abgleich mit dem aktuellen Zustand des Mediaplayers
+- Behandlung vorübergehender Zustände wie „unbekannt“ und „nicht verfügbar“, ohne die Sitzung sofort zu beenden
+- Aufteilung der Spielzeit an Tages-, Wochen-, Monats- und Jahresgrenzen
+- Mitgeliefertes Platzhalterbild
+- Dashboardvorlage mit neutralen Beispiel-Entitäten
+- HACS-Metadaten und automatische Prüfungen der Python-Syntax und JSON-Dateien
 
-- Configuration through the Home Assistant UI
-- Selection of an existing PS4 media player
-- Playtime sensors for today, this week, this month and this year
-- Last game, last session duration and session history sensors
-- A gaming-state binary sensor
-- Session checkpoints saved every minute
-- Recovery of checkpointed session time after a restart
-- Reconciliation against the current media-player state
-- Handling of temporary unknown or unavailable media-player states without immediately ending a session
-- Playtime allocation across local day, week, month and year boundaries
-- Bundled placeholder artwork and static image URL registration
-- An example Lovelace dashboard with neutral entity placeholders
-- HACS metadata and syntax/JSON CI checks
+Zeiten, in denen Home Assistant ausgeschaltet ist, werden **nicht mitgezählt**.
 
-Time while Home Assistant is offline is deliberately **not** counted. Migration of existing statistics and comprehensive integration tests are still outstanding.
+Die Übernahme vorhandener Statistikwerte aus bisherigen Helfern ist noch nicht enthalten. Umfassende Integrationstests stehen ebenfalls noch aus.
 
-## Requirements
+## Voraussetzungen
 
-- An existing PS4 media-player entity in Home Assistant
-- For the example dashboard:
+- Ein vorhandener PS4-Mediaplayer in Home Assistant
+- Für die optionale Dashboardvorlage:
   - Mushroom
   - vertical-stack-in-card
-  - card-mod for the optional styling
-  - auto-entities is not required
+  - card-mod für die zusätzliche Gestaltung
 
-The integration tracks the selected media player's state. It does not replace the underlying PS4 integration.
+Die Integration wertet den Zustand des ausgewählten Mediaplayers aus. Sie ersetzt nicht die zugrunde liegende PlayStation-4-Integration.
 
-## Setup for development testing
+## Manuelle Installation zum Testen
 
-1. Copy the complete `custom_components/ps4_game_tracker` folder, including its `www` subfolder, into `/config/custom_components/`.
-2. Restart Home Assistant.
-3. Open **Settings → Devices & services → Add integration** and select **PS4 Game Tracker**.
-4. Select your existing PS4 media player. No particular entity ID is required.
-5. Confirm the generated entity IDs under **Developer Tools → States**.
-6. Optionally add the example dashboard described below.
+1. Das Repository als ZIP-Datei herunterladen und entpacken.
+2. Den vollständigen Ordner `custom_components/ps4_game_tracker` einschließlich des Unterordners `www` nach `/config/custom_components/` kopieren.
+3. Home Assistant neu starten.
+4. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** nach **PS4 Game Tracker** suchen.
+5. Den vorhandenen PS4-Mediaplayer auswählen. Ein bestimmter Entitätsname ist nicht erforderlich.
+6. Die erzeugten Entitäts-IDs unter **Entwicklerwerkzeuge → Zustände** prüfen.
+7. Bei Bedarf die nachfolgend beschriebene Dashboardvorlage hinzufügen.
 
-Keep your existing PS4 automations and helpers until the new integration has been validated.
+Die Datei `__init__.py` muss nach dem Kopieren unter folgendem Pfad liegen:
 
-## Example dashboard
+```text
+/config/custom_components/ps4_game_tracker/__init__.py
+```
 
-The dashboard template is located at:
+Bestehende PS4-Automationen und Helfer während der Testphase beibehalten.
 
-`dashboard/ps4-dashboard.yaml`
+## Dashboardvorlage
 
-It is an example and is **not automatically configured** by the integration.
+[Dashboard-YAML öffnen](https://github.com/TheBrain26/ha-ps4-game-tracker/blob/main/dashboard/ps4-dashboard.yaml)
 
-Before using it:
+Die Vorlage ist ein Beispiel und wird von der Integration **nicht automatisch eingerichtet**.
 
-1. Replace every occurrence of `media_player.deine_ps4` with your own PS4 media-player entity.
-2. Check the `sensor.ps4_game_tracker_...` entity IDs against those generated by your installation.
-3. Replace the four `sensor.deine_ps4_..._trophaen` placeholders with your own trophy sensors, or remove the optional trophy grid.
+Benötigt werden Mushroom und vertical-stack-in-card. Für die zusätzliche Gestaltung wird card-mod verwendet. Auto-entities ist nicht erforderlich.
 
-Trophy sensors are not provided by PS4 Game Tracker.
+Vor der Verwendung:
 
-The dashboard displays:
+1. Alle Vorkommen von `media_player.deine_ps4` durch die eigene PS4-Mediaplayer-Entität ersetzen.
+2. Die Entitäts-IDs `sensor.ps4_game_tracker_...` mit den tatsächlich erzeugten Entitäten der eigenen Installation abgleichen.
+3. Die vier Beispiel-Entitäten `sensor.deine_ps4_..._trophaen` durch eigene Trophäen-Sensoren ersetzen oder den optionalen Trophäen-Block entfernen.
 
-- A placeholder when the media player is not playing
-- The media player's artwork and game title while playing
-- Playtime for today, this week, this month and this year
-- Last session duration
-- Last game
-- Session history
-- Optional trophy counts
+Trophäen-Sensoren werden vom PS4 Game Tracker nicht bereitgestellt.
 
-A dashboard preview is included at:
+Das Dashboard zeigt:
 
-`dashboard/preview.png`
+- Ein Platzhalterbild, wenn der Mediaplayer nicht im Zustand `playing` ist
+- Das Spielcover und den Spieltitel während des Spielens
+- Die Spielzeit für heute, diese Woche, diesen Monat und dieses Jahr
+- Die letzte Spieldauer
+- Das letzte Spiel
+- Den Spielverlauf
+- Optional die Anzahl der Trophäen
 
-## Artwork
+### Vorschau
 
-The repository includes:
+![Vorschau des PS4-Game-Tracker-Dashboards](https://raw.githubusercontent.com/TheBrain26/ha-ps4-game-tracker/main/dashboard/preview.png)
 
-- `custom_components/ps4_game_tracker/www/ps4_platzhalter.png` — offline placeholder
-- `dashboard/preview.png` — dashboard preview
+## Bilder
 
-When the integration loads, it registers the bundled `www` folder at:
+Im Repository sind folgende Bilder enthalten:
 
-`/ps4_game_tracker`
+- `custom_components/ps4_game_tracker/www/ps4_platzhalter.png` – Platzhalterbild
+- `dashboard/preview.png` – Vorschau der Dashboardkarte
 
-The dashboard uses this image URL:
+Beim Laden der Integration wird der mitgelieferte Ordner `www` unter folgendem URL-Pfad bereitgestellt:
+
+```text
+/ps4_game_tracker
+```
+
+Die Dashboardvorlage verwendet diesen Bildpfad:
 
 ```yaml
 image: /ps4_game_tracker/ps4_platzhalter.png
 ```
 
-No manual copy to `/config/www/` is required for this URL.
+Ein zusätzliches Kopieren des Bildes nach `/config/www/` ist dafür nicht erforderlich.
 
-The image filename must be exactly `ps4_platzhalter.png`. Bundled image serving still requires validation in a live Home Assistant instance.
+Der Dateiname muss exakt `ps4_platzhalter.png` lauten. Die Bildbereitstellung muss noch im laufenden Home-Assistant-Betrieb getestet werden.
 
-## Session handling
+## Erfassung von Spielsitzungen
 
-Active sessions are checkpointed every minute.
+Eine laufende Spielsitzung wird im Minutentakt gespeichert.
 
-After a restart, the last saved checkpoint is recovered as a completed session. Time between that checkpoint and the restart is not recovered.
+Nach einem Neustart wird die zuletzt gespeicherte Sitzung bis zum letzten Speicherzeitpunkt als abgeschlossene Sitzung übernommen. Die Zeit zwischen diesem Speicherzeitpunkt und dem Neustart wird nicht nachträglich ergänzt.
 
-If the selected media player is playing when the tracker loads, a new session starts from that point.
+Befindet sich der ausgewählte Mediaplayer beim Laden des Trackers im Zustand `playing`, beginnt ab diesem Zeitpunkt eine neue Sitzung.
 
-Temporary `unknown` or `unavailable` states do not immediately end an active session. Once a known state returns, the tracker reconciles the session with the current media-player state.
+Vorübergehende Zustände wie `unknown` oder `unavailable` beenden eine aktive Sitzung nicht sofort. Sobald wieder ein bekannter Zustand vorliegt, gleicht der Tracker die Sitzung mit dem aktuellen Zustand des Mediaplayers ab.
 
-An active session may therefore include a temporary availability gap.
+Eine laufende Sitzung kann dadurch auch eine vorübergehende Unterbrechung der Erreichbarkeit enthalten.
 
-Sessions spanning a local period boundary are allocated to the corresponding periods.
+Überschreitet eine Sitzung eine lokale Tages-, Wochen-, Monats- oder Jahresgrenze, wird die Spielzeit auf die jeweiligen Zeiträume aufgeteilt.
 
-## Planned before release
+## Geplant vor einer stabilen Veröffentlichung
 
-- Validate installation and bundled image serving in a live Home Assistant instance
-- Validate restart recovery, game changes and temporary availability gaps
-- Validate playtime calculations across midnight and daylight-saving changes
-- Add automated tests against Home Assistant
-- Review Home Assistant and HACS compatibility requirements
-- Review bundled artwork rights before public distribution
-- Consider automatic dashboard configuration
-- Consider optional PSN trophy entity selection
-- Add migration of legacy helper statistics
+- Installation und Bildbereitstellung im laufenden Home-Assistant-Betrieb prüfen
+- Wiederherstellung nach Neustarts, Spielwechsel und vorübergehende Nichterreichbarkeit testen
+- Spielzeitberechnung über Mitternacht und bei Zeitumstellungen prüfen
+- Automatisierte Tests mit Home Assistant ergänzen
+- Kompatibilität mit Home Assistant und HACS prüfen
+- Nutzungsrechte der mitgelieferten Bilder vor öffentlicher Verbreitung klären
+- Automatische Einrichtung einer Dashboardkarte prüfen
+- Optionale Auswahl vorhandener PSN-Trophäen-Sensoren prüfen
+- Übernahme vorhandener Statistikwerte aus bisherigen Helfern ergänzen
 
-## Legal
+## Rechtlicher Hinweis
 
-Unofficial community project; not affiliated with Sony Interactive Entertainment.
+Inoffizielles Community-Projekt. Es besteht keine Verbindung zu Sony Interactive Entertainment.
