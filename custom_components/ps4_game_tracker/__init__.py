@@ -17,6 +17,7 @@ class Tracker:
         self.store = Store(hass, 1, f"{DOMAIN}_{entry.entry_id}")
         self.sessions, self.active, self.listeners = [], None, []
         self.unsub = None
+        self._transition_lock = __import__("asyncio").Lock()
 
     async def load(self):
         self.sessions = (await self.store.async_load() or {}).get("sessions", [])
@@ -54,13 +55,21 @@ class Tracker:
             else:
                 self.start(title)
         elif self.active:
-            self.hass.async_create_task(self.finish())
+            self.hass.async_create_task(self.finish_locked())
         else:
             self.notify()
 
+    async def finish_locked(self):
+        async with self._transition_lock:
+            await self.finish()
+
     async def switch(self, title):
-        await self.finish()
-        self.start(title)
+        async with self._transition_lock:
+            if self.active and self.active["title"] == title:
+                return
+            if self.active:
+                await self.finish()
+            self.start(title)
 
     def notify(self):
         for listener in list(self.listeners):
