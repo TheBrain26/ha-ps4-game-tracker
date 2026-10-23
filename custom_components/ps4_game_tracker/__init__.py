@@ -1,15 +1,39 @@
 """PS4 Game Tracker: session tracking from an existing media player."""
+
 from __future__ import annotations
+
 import asyncio
 from datetime import datetime, timedelta
-from homeassistant.core import HomeAssistant, callback
+from pathlib import Path
+
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import (
+    async_track_state_change_event,
+    async_track_time_interval,
+)
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
-from .const import DOMAIN, CONF_MEDIA_PLAYER
+
+from .const import CONF_MEDIA_PLAYER, DOMAIN
 
 PLATFORMS = ["sensor", "binary_sensor"]
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Make bundled dashboard images available."""
+    await hass.http.async_register_static_paths(
+        [
+            StaticPathConfig(
+                "/ps4_game_tracker",
+                str(Path(__file__).parent / "www"),
+                cache_headers=False,
+            )
+        ]
+    )
+    return True
+
 
 class Tracker:
     def __init__(self, hass, entry):
@@ -33,18 +57,26 @@ class Tracker:
             start = datetime.fromisoformat(previous["start"])
             end = datetime.fromisoformat(previous["last_seen"])
             if end > start:
-                self.sessions.append({
-                    "title": previous.get("title", "Unbekanntes Spiel"),
-                    "start": start.isoformat(),
-                    "end": end.isoformat(),
-                    "minutes": round((end - start).total_seconds() / 60, 2),
-                })
+                self.sessions.append(
+                    {
+                        "title": previous.get("title", "Unbekanntes Spiel"),
+                        "start": start.isoformat(),
+                        "end": end.isoformat(),
+                        "minutes": round(
+                            (end - start).total_seconds() / 60, 2
+                        ),
+                    }
+                )
                 self.sessions = self.sessions[-2000:]
-            await self.store.async_save({"sessions": self.sessions, "active": None})
+            await self.store.async_save(
+                {"sessions": self.sessions, "active": None}
+            )
 
         state = self.hass.states.get(self.entity_id)
         if state and state.state == "playing":
-            await self.start(state.attributes.get("media_title") or "Unbekanntes Spiel")
+            await self.start(
+                state.attributes.get("media_title") or "Unbekanntes Spiel"
+            )
         self.unsub = async_track_state_change_event(
             self.hass, [self.entity_id], self.on_change
         )
@@ -59,9 +91,9 @@ class Tracker:
         self.notify()
 
     async def persist(self):
-        await self.store.async_save({
-            "sessions": self.sessions, "active": self.active
-        })
+        await self.store.async_save(
+            {"sessions": self.sessions, "active": self.active}
+        )
 
     async def checkpoint(self, _now):
         async with self._transition_lock:
@@ -74,12 +106,16 @@ class Tracker:
             return
         start = datetime.fromisoformat(self.active["start"])
         end = dt_util.utcnow()
-        self.sessions.append({
-            "title": self.active["title"],
-            "start": start.isoformat(),
-            "end": end.isoformat(),
-            "minutes": round(max(0, (end - start).total_seconds()) / 60, 2),
-        })
+        self.sessions.append(
+            {
+                "title": self.active["title"],
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "minutes": round(
+                    max(0, (end - start).total_seconds()) / 60, 2
+                ),
+            }
+        )
         self.sessions = self.sessions[-2000:]
         self.active = None
         await self.persist()
@@ -101,7 +137,10 @@ class Tracker:
             if state is None or state.state in ("unknown", "unavailable"):
                 return
             if state.state == "playing":
-                title = state.attributes.get("media_title") or "Unbekanntes Spiel"
+                title = (
+                    state.attributes.get("media_title")
+                    or "Unbekanntes Spiel"
+                )
                 if self.active and self.active["title"] == title:
                     return
                 if self.active:
@@ -135,22 +174,38 @@ class Tracker:
         else:
             return 0
 
-        start_local = datetime.combine(first, datetime.min.time()).replace(
-            tzinfo=dt_util.get_default_time_zone()
-        )
+        start_local = datetime.combine(
+            first, datetime.min.time()
+        ).replace(tzinfo=dt_util.get_default_time_zone())
         boundary = dt_util.as_utc(start_local)
         now_utc = dt_util.utcnow()
         total_seconds = 0.0
+
         for session in self.sessions:
-            started = dt_util.as_utc(datetime.fromisoformat(session["start"]))
-            ended = dt_util.as_utc(datetime.fromisoformat(session["end"]))
-            total_seconds += max(
-                0.0, (min(ended, now_utc) - max(started, boundary)).total_seconds()
+            started = dt_util.as_utc(
+                datetime.fromisoformat(session["start"])
             )
+            ended = dt_util.as_utc(
+                datetime.fromisoformat(session["end"])
+            )
+            total_seconds += max(
+                0.0,
+                (
+                    min(ended, now_utc) - max(started, boundary)
+                ).total_seconds(),
+            )
+
         if self.active:
-            started = dt_util.as_utc(datetime.fromisoformat(self.active["start"]))
-            total_seconds += max(0.0, (now_utc - max(started, boundary)).total_seconds())
+            started = dt_util.as_utc(
+                datetime.fromisoformat(self.active["start"])
+            )
+            total_seconds += max(
+                0.0,
+                (now_utc - max(started, boundary)).total_seconds(),
+            )
+
         return round(total_seconds / 60, 1)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     tracker = Tracker(hass, entry)
@@ -158,6 +213,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = tracker
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
