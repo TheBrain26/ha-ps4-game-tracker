@@ -13,6 +13,7 @@ class PlayingSensor(BinarySensorEntity):
     def __init__(self, tracker):
         self.tracker = tracker
         self._attr_unique_id = f"{tracker.entry.entry_id}_playing"
+        self._attr_suggested_object_id = "ps4_game_tracker_spiel_aktiv"
     @property
     def is_on(self):
         return self.tracker.active is not None
