@@ -1,0 +1,13 @@
+{
+  "domain": "ps4_game_tracker",
+  "name": "PS4 Game Tracker",
+  "version": "0.1.0-dev",
+  "config_flow": true,
+  "documentation": "https://github.com/TheBrain26/ha-ps4-game-tracker",
+  "issue_tracker": "https://github.com/TheBrain26/ha-ps4-game-tracker/issues",
+  "dependencies": [],
+  "codeowners": [
+    "@TheBrain26"
+  ],
+  "iot_class": "local_push"
+}
