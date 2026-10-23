@@ -1,37 +1,45 @@
-# Example dashboard. Check generated entity IDs after setup.
-# Offline placeholder: copy ps4_platzhalter.png to /config/www until packaged image serving is implemented.
+# Beispiel-Dashboard für PS4 Game Tracker.
+# media_player.deine_ps4 durch die eigene PS4-Entität ersetzen.
+# Die vier Trophäen-Sensoren durch eigene Sensoren ersetzen
+# oder den Trophäen-Block entfernen.
+# Entitäts-IDs des Trackers nach der Einrichtung prüfen.
+# Das Platzhalterbild wird von der Integration bereitgestellt.
+
 type: custom:vertical-stack-in-card
 cards:
   - type: conditional
     conditions:
       - condition: state
-        entity: media_player.wanstebudeps4_playstation_4
+        entity: media_player.deine_ps4
         state_not: playing
     card:
       type: picture
-      image: /local/ps4_platzhalter.png?v=2
+      image: /ps4_game_tracker/ps4_platzhalter.png
       aspect_ratio: "16:9"
+
   - type: conditional
     conditions:
       - condition: state
-        entity: media_player.wanstebudeps4_playstation_4
+        entity: media_player.deine_ps4
         state: playing
     card:
       type: markdown
       content: |
-        <img src="{{ state_attr('media_player.wanstebudeps4_playstation_4', 'entity_picture') }}" style="width:100%;height:250px;object-fit:cover;border-radius:10px;display:block;">
+        <img src="{{ state_attr('media_player.deine_ps4', 'entity_picture') }}" style="width:100%;height:250px;object-fit:cover;border-radius:10px;display:block;">
+
   - type: custom:mushroom-template-card
-    entity: media_player.wanstebudeps4_playstation_4
+    entity: media_player.deine_ps4
     primary: PlayStation 4
     secondary: >-
-      {% if is_state('media_player.wanstebudeps4_playstation_4', 'playing') %}
-        {{ state_attr('media_player.wanstebudeps4_playstation_4', 'media_title') or 'Spiel aktiv' }}
+      {% if is_state('media_player.deine_ps4', 'playing') %}
+        {{ state_attr('media_player.deine_ps4', 'media_title') or 'Spiel aktiv' }}
       {% else %}
         Kein Spiel aktiv
       {% endif %}
     icon: mdi:sony-playstation
     icon_color: >-
-      {{ 'blue' if is_state('media_player.wanstebudeps4_playstation_4', 'playing') else 'grey' }}
+      {{ 'blue' if is_state('media_player.deine_ps4', 'playing') else 'grey' }}
+
   - type: custom:mushroom-template-card
     primary: Spielzeit
     secondary: >-
@@ -42,50 +50,60 @@ cards:
     icon: mdi:chart-line
     icon_color: blue
     multiline_secondary: true
+
   - type: custom:mushroom-entity-card
     entity: sensor.ps4_game_tracker_letzte_spieldauer
     name: Letzte Spieldauer
     icon: mdi:timer-outline
     icon_color: purple
+
   - type: custom:mushroom-entity-card
     entity: sensor.ps4_game_tracker_letztes_spiel
     name: Letztes Spiel
     icon: mdi:gamepad-variant
     icon_color: blue
+
   - type: custom:mushroom-template-card
     primary: Spielverlauf
     secondary: >-
       {{ states('sensor.ps4_game_tracker_spielverlauf') }}
     icon: mdi:history
     icon_color: orange
+
+  # Optional: Trophäen-Anzeige.
+  # Eigene Sensoren eintragen oder diesen gesamten Grid-Block entfernen.
   - type: grid
     columns: 4
     square: false
     cards:
       - type: custom:mushroom-template-card
-        primary: "{{ states('sensor.wohnzimmer_wanstebudeps_platin_trophaen') }}"
+        primary: "{{ states('sensor.deine_ps4_platin_trophaen') }}"
         secondary: Platin
         icon: mdi:trophy-variant
         icon_color: grey
         layout: vertical
+
       - type: custom:mushroom-template-card
-        primary: "{{ states('sensor.wohnzimmer_wanstebudeps_gold_trophaen') }}"
+        primary: "{{ states('sensor.deine_ps4_gold_trophaen') }}"
         secondary: Gold
         icon: mdi:trophy
         icon_color: amber
         layout: vertical
+
       - type: custom:mushroom-template-card
-        primary: "{{ states('sensor.wohnzimmer_wanstebudeps_silber_trophaen') }}"
+        primary: "{{ states('sensor.deine_ps4_silber_trophaen') }}"
         secondary: Silber
         icon: mdi:trophy
         icon_color: grey
         layout: vertical
+
       - type: custom:mushroom-template-card
-        primary: "{{ states('sensor.wohnzimmer_wanstebudeps_bronze_trophaen') }}"
+        primary: "{{ states('sensor.deine_ps4_bronze_trophaen') }}"
         secondary: Bronze
         icon: mdi:trophy
         icon_color: deep-orange
         layout: vertical
+
 card_mod:
   style: |
     ha-card {
