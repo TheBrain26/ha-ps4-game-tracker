@@ -1,0 +1,25 @@
+name: Validate integration
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile Python sources
+        run: python -m compileall -q custom_components/ps4_game_tracker
+      - name: Validate JSON metadata and translations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for path in [Path("hacs.json"), *Path("custom_components/ps4_game_tracker").rglob("*.json")]:
+              json.loads(path.read_text(encoding="utf-8"))
+              print("OK", path)
+          PY
