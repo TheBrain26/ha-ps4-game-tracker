@@ -47,7 +47,7 @@ class LastGameSensor(BaseSensor):
         super().__init__(tracker, "letztes_spiel", "Letztes Spiel")
     @property
     def native_value(self):
-        return self.tracker.sessions[-1]["title"] if self.tracker.sessions else "Kein Spiel erfasst"
+        return self.tracker.sessions[-1]["title"] if self.tracker.sessions else self.tracker.legacy.get("last_game", "Kein Spiel erfasst")
 
 class LastDurationSensor(BaseSensor):
     _attr_icon = "mdi:timer"
@@ -56,7 +56,7 @@ class LastDurationSensor(BaseSensor):
         super().__init__(tracker, "letzte_spieldauer", "Letzte Spieldauer")
     @property
     def native_value(self):
-        return round(self.tracker.sessions[-1]["minutes"], 1) if self.tracker.sessions else 0
+        return round(self.tracker.sessions[-1]["minutes"], 1) if self.tracker.sessions else self.tracker.legacy.get("last_duration", 0)
 
 class HistorySensor(BaseSensor):
     _attr_icon = "mdi:history"
@@ -67,4 +67,10 @@ class HistorySensor(BaseSensor):
         return f"{len(self.tracker.sessions)} Sitzungen"
     @property
     def extra_state_attributes(self):
-        return {"sessions": self.tracker.sessions[-20:]}
+        return {
+            "sessions": self.tracker.sessions[-20:],
+            "legacy_history": self.tracker.legacy.get("history", ""),
+            "legacy_imported_at": self.tracker.legacy.get("captured_at"),
+            "legacy_last_end": self.tracker.legacy.get("last_end"),
+        }
+

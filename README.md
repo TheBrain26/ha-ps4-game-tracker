@@ -23,7 +23,7 @@ Benutzerdefinierte Home-Assistant-Integration zur Erfassung von PlayStation-4-Sp
 
 Zeiten, in denen Home Assistant ausgeschaltet ist, werden **nicht mitgezählt**.
 
-Die Übernahme vorhandener Statistikwerte aus bisherigen Helfern ist noch nicht enthalten. Umfassende Integrationstests stehen ebenfalls noch aus.
+Die optionale Übernahme vorhandener Helfer ist bei der ersten Einrichtung möglich. Umfassende Integrationstests im laufenden Home Assistant stehen weiterhin aus.
 
 ## Voraussetzungen
 
@@ -52,6 +52,24 @@ Die Datei `__init__.py` muss nach dem Kopieren unter folgendem Pfad liegen:
 ```
 
 Bestehende PS4-Automationen und Helfer während der Testphase beibehalten.
+
+## Einmalige Übernahme bisheriger Helfer
+
+Bei der ersten Einrichtung kann **Bisherige Helfer einmalig übernehmen** aktiviert werden. Anschließend die Helfer für heute, Woche, Monat, Jahr, letzte Spieldauer, letztes Spiel, Spielverlauf und letztes Spielende auswählen. Es sind keine festgelegten Entitätsnamen erforderlich.
+
+Vor dem Import jede Spielsitzung beenden und warten, bis die bisherigen Automationen ihre Helfer aktualisiert haben. Alle Spielzeiten müssen in **Minuten** vorliegen. Das letzte Spielende muss Datum und Uhrzeit enthalten. Die Einrichtung lehnt unbekannte, nicht verfügbare, negative und nicht endliche Zahlenwerte ab. Bei einem Mediaplayer im Zustand `playing` ist der Import gesperrt; zusätzlich muss bestätigt werden, dass keine Sitzung läuft. `unknown` ist kein Nachweis einer ausgeschalteten Konsole.
+
+Die aktuellen Helferwerte werden beim Abschluss der Einrichtung erfasst. Die bisherigen Helfer und Automationen werden weder verändert noch deaktiviert.
+
+- Jede Zeitraum-Summe wird separat als Startwert übernommen und nur zur neuen Spielzeit desselben Zeitraums addiert. Die vier Summen werden nicht miteinander addiert.
+- Der jeweilige Startwert entfällt beim nächsten lokalen Tages-, Wochen-, Monats- bzw. Jahreswechsel. Eine rückwirkende Verteilung auf einzelne Tage ist aus Summen nicht möglich.
+- Letztes Spiel und letzte Spieldauer werden übernommen und nach der ersten neu abgeschlossenen Sitzung durch deren Werte ersetzt.
+- Der alte Spielverlauf wird unverändert im Attribut `legacy_history` des Spielverlauf-Sensors aufbewahrt. Er wird nicht in einzelne Sitzungen umgerechnet oder zur Spielzeit addiert.
+- `legacy_imported_at` und `legacy_last_end` dokumentieren den Übernahmezeitpunkt und das bisherige Spielende.
+- Die Sitzungsanzahl zählt nur neu erfasste Sitzungen.
+- Ein dauerhafter Initialisierungsstand verhindert einen erneuten Import bei Neustarts. Bereits vorhandene Tracker-Speicherstände werden nicht nachträglich importiert oder überschrieben.
+
+Die Übernahme ist für die **erste Einrichtung** vorgesehen. Ein nachträglicher Import in einen bereits verwendeten Tracker und die Migration der Recorder-Historie werden nicht unterstützt. Die Integration zum erneuten Import nicht löschen und neu anlegen: Dadurch könnte eine zweite, unabhängige Statistik entstehen.
 
 ## Dashboardvorlage
 
@@ -130,8 +148,9 @@ Eine laufende Sitzung kann dadurch auch eine vorübergehende Unterbrechung der E
 - Nutzungsrechte der mitgelieferten Bilder vor öffentlicher Verbreitung klären
 - Automatische Einrichtung einer Dashboardkarte prüfen
 - Optionale Auswahl vorhandener PSN-Trophäen-Sensoren prüfen
-- Übernahme vorhandener Statistikwerte aus bisherigen Helfern ergänzen
+- Übernahme vorhandener Helferwerte in einer laufenden Home-Assistant-Installation validieren
 
 ## Rechtlicher Hinweis
 
 Inoffizielles Community-Projekt. Es besteht keine Verbindung zu Sony Interactive Entertainment.
+

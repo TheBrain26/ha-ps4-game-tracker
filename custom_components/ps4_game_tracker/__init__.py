@@ -17,6 +17,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_MEDIA_PLAYER, DOMAIN
+from .legacy import baseline_minutes
 
 PLATFORMS = ["sensor", "binary_sensor"]
 
@@ -44,11 +45,18 @@ class Tracker:
         self.unsub = None
         self._transition_lock = asyncio.Lock()
         self.unsub_checkpoint = None
+        self.legacy = {}
 
     async def load(self):
         data = await self.store.async_load() or {}
         self.sessions = data.get("sessions", [])
         self.active = None
+        # Only a genuinely new store may import the setup snapshot.
+        if not data and not self.sessions:
+            self.legacy = self.entry.data.get("legacy_snapshot", {})
+            await self.persist()
+        else:
+            self.legacy = data.get("legacy", {})
 
         # Recover only time that was actually checkpointed before restart.
         # Never assume that the console kept playing while HA was offline.
@@ -68,9 +76,7 @@ class Tracker:
                     }
                 )
                 self.sessions = self.sessions[-2000:]
-            await self.store.async_save(
-                {"sessions": self.sessions, "active": None}
-            )
+            await self.persist()
 
         state = self.hass.states.get(self.entity_id)
         if state and state.state == "playing":
@@ -92,7 +98,8 @@ class Tracker:
 
     async def persist(self):
         await self.store.async_save(
-            {"sessions": self.sessions, "active": self.active}
+            {"sessions": self.sessions, "active": self.active,
+             "legacy": self.legacy, "initialized": True}
         )
 
     async def checkpoint(self, _now):
@@ -179,7 +186,7 @@ class Tracker:
         ).replace(tzinfo=dt_util.get_default_time_zone())
         boundary = dt_util.as_utc(start_local)
         now_utc = dt_util.utcnow()
-        total_seconds = 0.0
+        total_seconds = baseline_minutes(self.legacy, today, period) * 60
 
         for session in self.sessions:
             started = dt_util.as_utc(
@@ -228,3 +235,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
                 tracker.active["last_seen"] = dt_util.utcnow().isoformat()
                 await tracker.persist()
     return ok
+
