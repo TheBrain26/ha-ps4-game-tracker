@@ -1,0 +1,94 @@
+# Example dashboard. Check generated entity IDs after setup.
+# Offline placeholder: copy ps4_platzhalter.png to /config/www until packaged image serving is implemented.
+type: custom:vertical-stack-in-card
+cards:
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: media_player.wanstebudeps4_playstation_4
+        state_not: playing
+    card:
+      type: picture
+      image: /local/ps4_platzhalter.png?v=2
+      aspect_ratio: "16:9"
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: media_player.wanstebudeps4_playstation_4
+        state: playing
+    card:
+      type: markdown
+      content: |
+        <img src="{{ state_attr('media_player.wanstebudeps4_playstation_4', 'entity_picture') }}" style="width:100%;height:250px;object-fit:cover;border-radius:10px;display:block;">
+  - type: custom:mushroom-template-card
+    entity: media_player.wanstebudeps4_playstation_4
+    primary: PlayStation 4
+    secondary: >-
+      {% if is_state('media_player.wanstebudeps4_playstation_4', 'playing') %}
+        {{ state_attr('media_player.wanstebudeps4_playstation_4', 'media_title') or 'Spiel aktiv' }}
+      {% else %}
+        Kein Spiel aktiv
+      {% endif %}
+    icon: mdi:sony-playstation
+    icon_color: >-
+      {{ 'blue' if is_state('media_player.wanstebudeps4_playstation_4', 'playing') else 'grey' }}
+  - type: custom:mushroom-template-card
+    primary: Spielzeit
+    secondary: >-
+      Heute: {{ states('sensor.ps4_game_tracker_spielzeit_heute') }} min ·
+      Woche: {{ states('sensor.ps4_game_tracker_spielzeit_woche') }} min ·
+      Monat: {{ states('sensor.ps4_game_tracker_spielzeit_monat') }} min ·
+      Jahr: {{ states('sensor.ps4_game_tracker_spielzeit_jahr') }} min
+    icon: mdi:chart-line
+    icon_color: blue
+    multiline_secondary: true
+  - type: custom:mushroom-entity-card
+    entity: sensor.ps4_game_tracker_letzte_spieldauer
+    name: Letzte Spieldauer
+    icon: mdi:timer-outline
+    icon_color: purple
+  - type: custom:mushroom-entity-card
+    entity: sensor.ps4_game_tracker_letztes_spiel
+    name: Letztes Spiel
+    icon: mdi:gamepad-variant
+    icon_color: blue
+  - type: custom:mushroom-template-card
+    primary: Spielverlauf
+    secondary: >-
+      {{ states('sensor.ps4_game_tracker_spielverlauf') }}
+    icon: mdi:history
+    icon_color: orange
+  - type: grid
+    columns: 4
+    square: false
+    cards:
+      - type: custom:mushroom-template-card
+        primary: "{{ states('sensor.wohnzimmer_wanstebudeps_platin_trophaen') }}"
+        secondary: Platin
+        icon: mdi:trophy-variant
+        icon_color: grey
+        layout: vertical
+      - type: custom:mushroom-template-card
+        primary: "{{ states('sensor.wohnzimmer_wanstebudeps_gold_trophaen') }}"
+        secondary: Gold
+        icon: mdi:trophy
+        icon_color: amber
+        layout: vertical
+      - type: custom:mushroom-template-card
+        primary: "{{ states('sensor.wohnzimmer_wanstebudeps_silber_trophaen') }}"
+        secondary: Silber
+        icon: mdi:trophy
+        icon_color: grey
+        layout: vertical
+      - type: custom:mushroom-template-card
+        primary: "{{ states('sensor.wohnzimmer_wanstebudeps_bronze_trophaen') }}"
+        secondary: Bronze
+        icon: mdi:trophy
+        icon_color: deep-orange
+        layout: vertical
+card_mod:
+  style: |
+    ha-card {
+      border-radius: 16px !important;
+      overflow: hidden !important;
+    }
