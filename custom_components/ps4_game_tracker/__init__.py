@@ -76,26 +76,42 @@ class Tracker:
             listener()
 
     def minutes(self, period):
-        now = dt_util.now()
-        def key(t):
-            if period == "today": return t.date()
-            if period == "week": return t.isocalendar()[:2]
-            if period == "month": return (t.year, t.month)
-            return t.year
-        total = 0.0
-        records = list(self.sessions)
+        """Sum overlapping session time, clipping at the local period boundary.
+
+        Calculate overlaps in UTC so daylight-saving transitions are handled
+        correctly. Sessions spanning midnight are counted in both periods.
+        """
+        now_local = dt_util.now()
+        today = now_local.date()
+        if period == "today":
+            first = today
+        elif period == "week":
+            first = today - timedelta(days=today.weekday())
+        elif period == "month":
+            first = today.replace(day=1)
+        elif period == "year":
+            first = today.replace(month=1, day=1)
+        else:
+            return 0
+
+        start_local = dt_util.start_of_local_day(
+            datetime.combine(first, datetime.min.time()).replace(
+                tzinfo=dt_util.get_default_time_zone()
+            )
+        )
+        boundary = dt_util.as_utc(start_local)
+        now_utc = dt_util.utcnow()
+        total_seconds = 0.0
+        for session in self.sessions:
+            started = dt_util.as_utc(datetime.fromisoformat(session["start"]))
+            ended = dt_util.as_utc(datetime.fromisoformat(session["end"]))
+            total_seconds += max(
+                0.0, (min(ended, now_utc) - max(started, boundary)).total_seconds()
+            )
         if self.active:
-            records.append({"start": self.active["start"], "end": dt_util.utcnow().isoformat()})
-        for session in records:
-            start = dt_util.as_local(datetime.fromisoformat(session["start"]))
-            end = dt_util.as_local(datetime.fromisoformat(session["end"]))
-            cursor = start
-            while cursor < end:
-                nxt = min(end, cursor + timedelta(minutes=1))
-                if key(cursor) == key(now):
-                    total += (nxt-cursor).total_seconds()/60
-                cursor = nxt
-        return round(total, 1)
+            started = dt_util.as_utc(datetime.fromisoformat(self.active["start"]))
+            total_seconds += max(0.0, (now_utc - max(started, boundary)).total_seconds())
+        return round(total_seconds / 60, 1)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     tracker = Tracker(hass, entry)
