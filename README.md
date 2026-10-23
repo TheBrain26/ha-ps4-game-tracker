@@ -5,7 +5,7 @@ Custom Home Assistant integration for PlayStation 4 gaming sessions, playtime st
 > **Development preview – not released or tested in a live Home Assistant instance.** Keep your existing PS4 automations and helpers running until the new implementation is validated.
 
 ## Status (October 2026)
-The development branch contains a basic config flow, playtime and history sensors, a gaming-state binary sensor, HACS metadata, a dashboard example and syntax/JSON CI checks. The integration currently tracks sessions **only while Home Assistant is running**; restart-safe session continuity, migration of existing statistics and comprehensive integration tests are still outstanding.
+The development branch contains a basic config flow, playtime and history sensors, a gaming-state binary sensor, HACS metadata, a dashboard example and syntax/JSON CI checks. Active sessions are checkpointed every minute. On restart, the last saved checkpoint is recovered as a completed session; any time while Home Assistant was offline is deliberately **not** counted. Migration of existing statistics and comprehensive integration tests are still outstanding.
 
 ## Setup for development testing
 1. Copy `custom_components/ps4_game_tracker` into `/config/custom_components/`.
@@ -24,7 +24,7 @@ Two user-provided images are available in the separately prepared project ZIP:
 **These PNGs have not yet been committed to GitHub.** The dashboard currently refers to `/local/ps4_platzhalter.png?v=2`, so for testing copy the placeholder to Home Assistant's `/config/www/ps4_platzhalter.png`. Automatic serving of bundled assets is planned.
 
 ## Planned before release
-- Restart-safe active-session persistence
+- Validate restart checkpoint recovery and edge cases in a live Home Assistant test
 - Correct recovery and reconciliation of interrupted sessions
 - Automated tests against Home Assistant
 - Bundled image URL registration and automatic dashboard configuration
