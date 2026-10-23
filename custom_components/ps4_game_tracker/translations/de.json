@@ -5,9 +5,31 @@
         "title": "PS4 Game Tracker",
         "description": "Wähle den PS4-Mediaplayer aus.",
         "data": {
-          "media_player": "PS4-Mediaplayer"
+          "media_player": "PS4-Mediaplayer",
+          "import_legacy": "Bisherige Helfer einmalig übernehmen"
+        }
+      },
+      "legacy": {
+        "title": "Bisherige PS4-Daten übernehmen",
+        "description": "Wähle deine bisherigen Helfer. Alle Zahlen müssen in Minuten vorliegen. Beende zuerst jede Spielsitzung und warte auf die Aktualisierung der alten Helfer. Die Summen werden je Zeitraum als Startwerte übernommen. Der alte Verlauf bleibt als Text erhalten; einzelne Sitzungen werden daraus nicht erzeugt. Es erfolgt kein erneuter Import beim Neustart. Bestehende Helfer werden nicht verändert.",
+        "data": {
+          "today": "Spielzeit heute (Minuten)",
+          "week": "Spielzeit Woche (Minuten)",
+          "month": "Spielzeit Monat (Minuten)",
+          "year": "Spielzeit Jahr (Minuten)",
+          "last_duration": "Letzte Spieldauer (Minuten)",
+          "last_game": "Letztes Spiel",
+          "history": "Bisheriger Spielverlauf",
+          "last_end": "Letztes Spielende",
+          "console_idle": "Es läuft keine Spielsitzung; die bisherigen Zähler sind abgeschlossen."
         }
       }
+    },
+    "error": {
+      "console_not_idle": "Beende zuerst die Spielsitzung und bestätige dies.",
+      "missing_helper": "Ein Helfer fehlt oder ist unbekannt/nicht verfügbar. Prüfe die Auswahl.",
+      "invalid_minutes": "Spielzeiten müssen endliche, nicht negative Zahlen in Minuten sein.",
+      "invalid_last_end": "Das letzte Spielende muss Datum und Uhrzeit enthalten."
     }
   }
 }

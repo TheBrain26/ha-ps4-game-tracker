@@ -5,9 +5,31 @@
         "title": "PS4 Game Tracker",
         "description": "Choose your PS4 media player",
         "data": {
-          "media_player": "PS4 media player"
+          "media_player": "PS4 media player",
+          "import_legacy": "Import existing helpers once"
+        }
+      },
+      "legacy": {
+        "title": "Import existing PS4 data",
+        "description": "Select the existing helpers. All numbers must be minutes. End any gaming session and wait for the old helpers to update first. Totals become separate period baselines. Legacy history is preserved as text without inferred sessions. Restarting does not repeat the import. Existing helpers are unchanged.",
+        "data": {
+          "today": "Playtime today (minutes)",
+          "week": "Playtime this week (minutes)",
+          "month": "Playtime this month (minutes)",
+          "year": "Playtime this year (minutes)",
+          "last_duration": "Last session duration (minutes)",
+          "last_game": "Last game",
+          "history": "Legacy history",
+          "last_end": "Last session end",
+          "console_idle": "No gaming session is running; the old counters are finalized."
         }
       }
+    },
+    "error": {
+      "console_not_idle": "End the gaming session and confirm it first.",
+      "missing_helper": "A helper is missing, unknown or unavailable. Check the selected entities.",
+      "invalid_minutes": "Playtime values must be finite nonnegative numbers in minutes.",
+      "invalid_last_end": "The last session end must contain a date and time."
     }
   }
 }
