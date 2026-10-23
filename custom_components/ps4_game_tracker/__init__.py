@@ -94,10 +94,8 @@ class Tracker:
         else:
             return 0
 
-        start_local = dt_util.start_of_local_day(
-            datetime.combine(first, datetime.min.time()).replace(
-                tzinfo=dt_util.get_default_time_zone()
-            )
+        start_local = datetime.combine(first, datetime.min.time()).replace(
+            tzinfo=dt_util.get_default_time_zone()
         )
         boundary = dt_util.as_utc(start_local)
         now_utc = dt_util.utcnow()
