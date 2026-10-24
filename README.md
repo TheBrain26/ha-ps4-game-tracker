@@ -2,7 +2,7 @@
 
 Benutzerdefinierte Home-Assistant-Integration zur Erfassung von PlayStation-4-Spielsitzungen und Spielzeiten – mit einer optionalen Dashboardvorlage.
 
-> **Testversion – noch nicht im laufenden Home-Assistant-Betrieb validiert.** Bestehende PS4-Automationen und Helfer vorerst beibehalten, bis die neue Integration erfolgreich getestet wurde.
+> **Vorabversion.** Einrichtung, Helferübernahme, Coverwechsel, Spielwechsel und Sitzungsabschluss wurden in einer Home-Assistant-Installation praktisch erprobt. Weitere Konfigurationen und Grenzfälle sind noch zu testen. Alte Erfassungs- und Reset-Automationen nach der Übernahme deaktivieren; Helfer zunächst aufbewahren.
 
 ## Funktionsumfang
 
@@ -15,7 +15,7 @@ Benutzerdefinierte Home-Assistant-Integration zur Erfassung von PlayStation-4-Sp
 - Speicherung laufender Sitzungen im Minutentakt
 - Wiederherstellung gespeicherter Spielzeit nach einem Neustart
 - Abgleich mit dem aktuellen Zustand des Mediaplayers
-- Behandlung vorübergehender Zustände wie „unbekannt“ und „nicht verfügbar“, ohne die Sitzung sofort zu beenden
+- Sofortige Zeitpause bei unbekanntem Status und verzögerter Sitzungsabschluss
 - Aufteilung der Spielzeit an Tages-, Wochen-, Monats- und Jahresgrenzen
 - Mitgeliefertes Platzhalterbild
 - Dashboardvorlage mit neutralen Beispiel-Entitäten
@@ -83,18 +83,19 @@ Vor der Verwendung:
 
 1. Alle Vorkommen von `media_player.deine_ps4` durch die eigene PS4-Mediaplayer-Entität ersetzen.
 2. Die Entitäts-IDs `sensor.ps4_game_tracker_...` mit den tatsächlich erzeugten Entitäten der eigenen Installation abgleichen.
-3. Die vier Beispiel-Entitäten `sensor.deine_ps4_..._trophaen` durch eigene Trophäen-Sensoren ersetzen oder den optionalen Trophäen-Block entfernen.
+3. Auch `binary_sensor.ps4_game_tracker_spiel_aktiv` mit der eigenen Entität abgleichen.
+4. Die vier Beispiel-Entitäten `sensor.deine_ps4_..._trophaen` durch eigene Trophäen-Sensoren ersetzen oder den optionalen Trophäen-Block entfernen.
 
-Trophäen-Sensoren werden vom PS4 Game Tracker nicht bereitgestellt.
+Trophäen-Sensoren werden vom PS4 Game Tracker nicht bereitgestellt. Die Vorlage enthält keine persönlichen Wanstebude-Entitätsnamen. Das Platzhalterbild wird unter `/ps4_game_tracker/ps4_platzhalter.png` mitgeliefert. Die Anzeige der fünf Sitzungen begrenzt nur das Dashboard; der Sensor stellt die letzten 20 von maximal 2.000 gespeicherten Sitzungen bereit.
 
 Das Dashboard zeigt:
 
-- Ein Platzhalterbild, wenn der Mediaplayer nicht im Zustand `playing` ist
+- Ein Platzhalterbild, wenn der Tracker kein aktives Spiel meldet
 - Das Spielcover und den Spieltitel während des Spielens
 - Die Spielzeit für heute, diese Woche, diesen Monat und dieses Jahr
 - Die letzte Spieldauer
 - Das letzte Spiel
-- Den Spielverlauf
+- Die letzten fünf abgeschlossenen Sitzungen, neueste zuerst, kompakt mit `|` getrennt; Uhrzeiten lokal und Spielzeiten ohne Nachkommastellen
 - Optional die Anzahl der Trophäen
 
 ### Vorschau
@@ -132,9 +133,9 @@ Nach einem Neustart wird die zuletzt gespeicherte Sitzung bis zum letzten Speich
 
 Befindet sich der ausgewählte Mediaplayer beim Laden des Trackers im Zustand `playing`, beginnt ab diesem Zeitpunkt eine neue Sitzung.
 
-Vorübergehende Zustände wie `unknown` oder `unavailable` beenden eine aktive Sitzung nicht sofort. Sobald wieder ein bekannter Zustand vorliegt, gleicht der Tracker die Sitzung mit dem aktuellen Zustand des Mediaplayers ab.
+Der Tracker verwendet für die Erfassung den Zustand `playing` und das Attribut `media_title` des ausgewählten Mediaplayers.
 
-Eine laufende Sitzung kann dadurch auch eine vorübergehende Unterbrechung der Erreichbarkeit enthalten.
+Bei `unknown`, `unavailable` oder fehlendem Player wird die Spielzeit sofort eingefroren und „Spiel aktiv“ ausgeschaltet. Nach 60 Sekunden wird beim nächsten Minutencheck die Sitzung zum Unterbrechungszeitpunkt abgeschlossen. Bei Wiederverbindung beginnt eine neue Sitzung; kurze Abbrüche können mehrere Einträge erzeugen. Die Unterbrechung wird nicht mitgezählt.
 
 Überschreitet eine Sitzung eine lokale Tages-, Wochen-, Monats- oder Jahresgrenze, wird die Spielzeit auf die jeweiligen Zeiträume aufgeteilt.
 
