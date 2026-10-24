@@ -46,11 +46,13 @@ class Tracker:
         self._transition_lock = asyncio.Lock()
         self.unsub_checkpoint = None
         self.legacy = {}
+        self.pending_end = None
 
     async def load(self):
         data = await self.store.async_load() or {}
         self.sessions = data.get("sessions", [])
         self.active = None
+        self.pending_end = None
         # Only a genuinely new store may import the setup snapshot.
         if not data and not self.sessions:
             self.legacy = self.entry.data.get("legacy_snapshot", {})
@@ -103,16 +105,25 @@ class Tracker:
         )
 
     async def checkpoint(self, _now):
-        async with self._transition_lock:
-            if self.active:
-                self.active["last_seen"] = dt_util.utcnow().isoformat()
-                await self.persist()
+        # Recheck the player before extending any stored gameplay time.
+        await self.reconcile()
 
-    async def finish(self):
+    async def mark_unknown(self):
+        if not self.active:
+            return
+        if self.pending_end is None:
+            self.pending_end = dt_util.utcnow()
+            self.active["last_seen"] = self.pending_end.isoformat()
+            await self.persist()
+            self.notify()
+        elif dt_util.utcnow() - self.pending_end >= timedelta(seconds=60):
+            await self.finish(self.pending_end)
+
+    async def finish(self, end=None):
         if not self.active:
             return
         start = datetime.fromisoformat(self.active["start"])
-        end = dt_util.utcnow()
+        end = end or self.pending_end or dt_util.utcnow()
         self.sessions.append(
             {
                 "title": self.active["title"],
@@ -125,6 +136,7 @@ class Tracker:
         )
         self.sessions = self.sessions[-2000:]
         self.active = None
+        self.pending_end = None
         await self.persist()
         self.notify()
 
@@ -137,18 +149,24 @@ class Tracker:
         """Serialize transitions and inspect the current state under the lock.
 
         Avoid acting on stale queued events when games change rapidly.
-        An unavailable/unknown state is not proof that gameplay ended.
+        Missing player data pauses time immediately and closes after a grace period.
         """
         async with self._transition_lock:
             state = self.hass.states.get(self.entity_id)
             if state is None or state.state in ("unknown", "unavailable"):
+                await self.mark_unknown()
                 return
             if state.state == "playing":
                 title = (
                     state.attributes.get("media_title")
                     or "Unbekanntes Spiel"
                 )
+                if self.active and self.pending_end is not None:
+                    # Do not charge the unobserved gap to either game.
+                    await self.finish(self.pending_end)
                 if self.active and self.active["title"] == title:
+                    self.active["last_seen"] = dt_util.utcnow().isoformat()
+                    await self.persist()
                     return
                 if self.active:
                     await self.finish()
@@ -208,7 +226,7 @@ class Tracker:
             )
             total_seconds += max(
                 0.0,
-                (now_utc - max(started, boundary)).total_seconds(),
+                ((self.pending_end or now_utc) - max(started, boundary)).total_seconds(),
             )
 
         return round(total_seconds / 60, 1)
@@ -232,7 +250,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
             tracker.unsub_checkpoint()
         async with tracker._transition_lock:
             if tracker.active:
-                tracker.active["last_seen"] = dt_util.utcnow().isoformat()
+                state = hass.states.get(tracker.entity_id)
+                if tracker.pending_end is None and state and state.state == "playing":
+                    tracker.active["last_seen"] = dt_util.utcnow().isoformat()
                 await tracker.persist()
     return ok
 

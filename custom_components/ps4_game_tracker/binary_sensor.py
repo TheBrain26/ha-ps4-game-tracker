@@ -16,7 +16,7 @@ class PlayingSensor(BinarySensorEntity):
         self._attr_suggested_object_id = "ps4_game_tracker_spiel_aktiv"
     @property
     def is_on(self):
-        return self.tracker.active is not None
+        return self.tracker.active is not None and self.tracker.pending_end is None
     async def async_added_to_hass(self):
         self.tracker.listeners.append(self.async_write_ha_state)
         self.async_on_remove(lambda: self.tracker.listeners.remove(self.async_write_ha_state))

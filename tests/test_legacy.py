@@ -109,6 +109,69 @@ class TrackerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(t.minutes('year'),0)
         self.assertTrue(t.store.data['initialized'])
 
+class DisconnectTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.now = NOW.astimezone(timezone.utc)
+        self.old_now, self.old_utcnow = clock.now, clock.utcnow
+        clock.now = lambda: self.now.astimezone(TZ)
+        clock.utcnow = lambda: self.now
+        self.state = SimpleNamespace(state="playing", attributes={"media_title":"Stray"})
+        self.tracker = make_tracker(False)
+        self.tracker.hass.states.get = lambda _: self.state
+        await self.tracker.load()
+
+    async def asyncTearDown(self):
+        clock.now, clock.utcnow = self.old_now, self.old_utcnow
+
+    async def test_shutdown_freezes_time_and_finishes_stray_once(self):
+        t = self.tracker
+        self.now += timedelta(minutes=3)
+        self.state.state = "unknown"
+        await t.reconcile()
+        self.assertIsNotNone(t.pending_end)
+        self.assertEqual(t.minutes("today"), 3)
+        self.now += timedelta(seconds=30)
+        await t.checkpoint(None)
+        self.assertEqual(t.minutes("today"), 3)
+        self.assertEqual(len(t.sessions), 0)
+        self.now += timedelta(seconds=31)
+        await t.checkpoint(None)
+        self.assertIsNone(t.active)
+        self.assertEqual(t.sessions[-1]["title"], "Stray")
+        self.assertEqual(t.sessions[-1]["minutes"], 3)
+        await t.checkpoint(None)
+        self.assertEqual(len(t.sessions), 1)
+
+    async def test_reconnection_excludes_gap_and_game_switch_keeps_titles(self):
+        t = self.tracker
+        self.now += timedelta(minutes=2)
+        self.state.state = "unavailable"
+        await t.reconcile()
+        self.now += timedelta(seconds=30)
+        self.state.state = "playing"
+        await t.reconcile()
+        self.assertEqual(t.minutes("today"), 2)
+        self.assertIsNone(t.pending_end)
+        self.now += timedelta(minutes=1)
+        self.state.attributes["media_title"] = "Horizon"
+        await t.reconcile()
+        self.assertEqual([x["title"] for x in t.sessions], ["Stray", "Stray"])
+        self.assertEqual(t.active["title"], "Horizon")
+        self.assertEqual(t.minutes("today"), 3)
+        self.state.state = "off"
+        await t.reconcile()
+        self.assertIsNone(t.active)
+
+    async def test_restart_during_unknown_does_not_count_gap(self):
+        t = self.tracker
+        self.now += timedelta(minutes=2)
+        self.state.state = "unknown"
+        await t.reconcile()
+        self.now += timedelta(hours=1)
+        await t.load()
+        self.assertIsNone(t.active)
+        self.assertEqual(t.sessions[-1]["minutes"], 2)
+
 # Exercise config-flow control paths without installing Home Assistant.
 class FakeFlow:
     def __init_subclass__(cls, **kwargs):
