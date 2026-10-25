@@ -27,7 +27,7 @@ class BaseSensor(SensorEntity):
         self.tracker.listeners.append(self.async_write_ha_state)
         self.async_on_remove(lambda: self.tracker.listeners.remove(self.async_write_ha_state))
         unsub = async_track_time_interval(
-            self.hass, lambda _: self.async_write_ha_state(), timedelta(minutes=1)
+            self.hass, lambda _: self.schedule_update_ha_state(), timedelta(minutes=1)
         )
         self.async_on_remove(unsub)
 
