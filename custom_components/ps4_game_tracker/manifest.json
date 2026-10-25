@@ -1,7 +1,7 @@
 {
   "domain": "ps4_game_tracker",
   "name": "PS4 Game Tracker",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "config_flow": true,
   "documentation": "https://github.com/TheBrain26/ha-ps4-game-tracker",
   "issue_tracker": "https://github.com/TheBrain26/ha-ps4-game-tracker/issues",
