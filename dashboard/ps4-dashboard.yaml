@@ -1,6 +1,10 @@
 # Öffentliche Vorlage: media_player.deine_ps4 ersetzen.
 # Tracker-IDs mit den tatsächlich angelegten Entitäten abgleichen.
+# Optional: PlayStation-Network-(PSN-)Integration für Trophäen-Sensoren.
 # Trophäen-Sensoren ersetzen oder den letzten Grid-Block entfernen.
+# Das Spielcover kommt aus entity_picture des gewählten PS4-Mediaplayers.
+# Fehlt dieses Attribut, wird das mitgelieferte Platzhalterbild angezeigt.
+# Spielzeit und Spielverlauf funktionieren unabhängig von PSN.
 type: custom:vertical-stack-in-card
 cards:
 - type: conditional
