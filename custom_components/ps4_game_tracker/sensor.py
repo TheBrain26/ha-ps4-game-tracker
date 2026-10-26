@@ -11,7 +11,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     tracker = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
         [PlaytimeSensor(tracker, key, label) for key, label in PERIODS.items()]
-        + [LastGameSensor(tracker), LastDurationSensor(tracker), HistorySensor(tracker)]
+        + [TotalPlaytimeSensor(tracker), LastGameSensor(tracker), LastDurationSensor(tracker), HistorySensor(tracker)]
     )
 
 class BaseSensor(SensorEntity):
@@ -40,6 +40,18 @@ class PlaytimeSensor(BaseSensor):
     @property
     def native_value(self):
         return self.tracker.minutes(self.period)
+
+class TotalPlaytimeSensor(BaseSensor):
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+    _attr_icon = "mdi:timer-sand-complete"
+
+    def __init__(self, tracker):
+        super().__init__(tracker, "spielzeit_gesamt", "Spielzeit Gesamt")
+
+    @property
+    def native_value(self):
+        return self.tracker.total_minutes()
+
 
 class LastGameSensor(BaseSensor):
     _attr_icon = "mdi:gamepad-variant"
@@ -72,5 +84,6 @@ class HistorySensor(BaseSensor):
             "legacy_history": self.tracker.legacy.get("history", ""),
             "legacy_imported_at": self.tracker.legacy.get("captured_at"),
             "legacy_last_end": self.tracker.legacy.get("last_end"),
+            "period_history": self.tracker.period_history(),
         }
 

@@ -248,5 +248,106 @@ class SensorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(duration.native_value,3)
         self.assertEqual(history.native_value,'1 Sitzungen')
 
+
+class HistoryAndLifetimeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_historical_day_week_month_year_and_opening(self):
+        t = make_tracker(False)
+        await t.load()
+        t.sessions = [{
+            'title': 'Stray',
+            'start': datetime(2026, 10, 24, 3, 50, tzinfo=timezone.utc).isoformat(),
+            'end': datetime(2026, 10, 24, 4, 8, 25, tzinfo=timezone.utc).isoformat(),
+            'minutes': 18.42,
+        }]
+        old_utcnow = clock.utcnow
+        clock.utcnow = lambda: datetime(2026, 10, 26, 6, tzinfo=timezone.utc)
+        try:
+            h = t.period_history()
+        finally:
+            clock.utcnow = old_utcnow
+        self.assertAlmostEqual(h['days']['2026-10-24'], 18.42, places=2)
+        self.assertAlmostEqual(h['weeks']['2026-W43'], 18.42, places=2)
+        self.assertAlmostEqual(h['months']['2026-10'], 18.42, places=2)
+        self.assertAlmostEqual(h['years']['2026'], 18.42, places=2)
+        self.assertEqual(t.total_minutes(), 0)
+
+    async def test_cross_midnight_and_year_boundary(self):
+        t = make_tracker(False)
+        await t.load()
+        t.sessions = [{
+            'title': 'Stray',
+            'start': datetime(2026, 12, 31, 22, 50, tzinfo=timezone.utc).isoformat(),
+            'end': datetime(2026, 12, 31, 23, 10, tzinfo=timezone.utc).isoformat(),
+            'minutes': 20,
+        }]
+        old_utcnow = clock.utcnow
+        clock.utcnow = lambda: datetime(2027, 1, 1, 1, tzinfo=timezone.utc)
+        try:
+            h = t.period_history()
+            self.assertEqual(h['years']['2026'], 10)
+            self.assertEqual(h['years']['2027'], 10)
+            self.assertEqual(h['months']['2026-12'], 10)
+            self.assertEqual(h['months']['2027-01'], 10)
+        finally:
+            clock.utcnow = old_utcnow
+
+    async def test_lifetime_after_opening_and_restart(self):
+        t = make_tracker(False)
+        await t.load()
+        t.total_opening = {
+            'minutes': 116.4,
+            'at': (NOW - timedelta(minutes=10)).astimezone(timezone.utc).isoformat(),
+        }
+        t.sessions = [{
+            'title': 'Stray',
+            'start': (NOW - timedelta(minutes=15)).astimezone(timezone.utc).isoformat(),
+            'end': (NOW - timedelta(minutes=5)).astimezone(timezone.utc).isoformat(),
+            'minutes': 10,
+        }]
+        self.assertEqual(t.total_minutes(), 121.4)
+        await t.persist()
+        t2 = make_tracker(False)
+        t2.store.data = copy.deepcopy(t.store.data)
+        await t2.load()
+        self.assertEqual(t2.total_minutes(), 121.4)
+
+
+    async def test_compaction_preserves_lifetime_and_history_after_restart(self):
+        t = make_tracker(False)
+        await t.load()
+        t.total_opening = {'minutes': 116.4, 'at': datetime(2026, 10, 23, tzinfo=timezone.utc).isoformat()}
+        start = datetime(2026, 10, 24, 4, tzinfo=timezone.utc)
+        t.sessions = [{
+            'title': 'Stray',
+            'start': (start + timedelta(minutes=i)).isoformat(),
+            'end': (start + timedelta(minutes=i+1)).isoformat(),
+            'minutes': 1,
+        } for i in range(2001)]
+        old_utcnow, old_now = clock.utcnow, clock.now
+        clock.utcnow = lambda: datetime(2026, 10, 27, tzinfo=timezone.utc)
+        clock.now = lambda: datetime(2026, 10, 27, 1, tzinfo=TZ)
+        try:
+            before = t.total_minutes()
+            history = t.period_history()
+            t.archive_excess_sessions()
+            self.assertEqual(len(t.sessions), 2000)
+            self.assertEqual(t.total_minutes(), before)
+            self.assertEqual(t.period_history(), history)
+            self.assertEqual(t.minutes('today'), 0)
+            self.assertEqual(t.minutes('week'), 0)
+            self.assertEqual(t.minutes('month'), 2001)
+            self.assertEqual(t.minutes('year'), 2001)
+            await t.persist()
+            t2 = make_tracker(False)
+            t2.store.data = copy.deepcopy(t.store.data)
+            await t2.load()
+            self.assertEqual(t2.total_minutes(), before)
+            self.assertEqual(t2.period_history(), history)
+            self.assertEqual(t2.minutes('week'), 0)
+            self.assertEqual(t2.minutes('month'), 2001)
+            self.assertEqual(t2.minutes('year'), 2001)
+        finally:
+            clock.utcnow, clock.now = old_utcnow, old_now
+
 if __name__ == '__main__':
     unittest.main()
