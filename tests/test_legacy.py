@@ -259,7 +259,12 @@ class HistoryAndLifetimeTests(unittest.IsolatedAsyncioTestCase):
             'end': datetime(2026, 10, 24, 4, 8, 25, tzinfo=timezone.utc).isoformat(),
             'minutes': 18.42,
         }]
-        h = t.period_history()
+        old_utcnow = clock.utcnow
+        clock.utcnow = lambda: datetime(2026, 10, 26, 6, tzinfo=timezone.utc)
+        try:
+            h = t.period_history()
+        finally:
+            clock.utcnow = old_utcnow
         self.assertAlmostEqual(h['days']['2026-10-24'], 18.42, places=2)
         self.assertAlmostEqual(h['weeks']['2026-W43'], 18.42, places=2)
         self.assertAlmostEqual(h['months']['2026-10'], 18.42, places=2)
