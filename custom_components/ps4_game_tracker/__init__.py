@@ -21,6 +21,10 @@ from .legacy import baseline_minutes
 
 PLATFORMS = ["sensor", "binary_sensor"]
 
+# Confirmed existing annual total on 26 October 2026; includes all earlier sessions.
+TOTAL_OPENING_MINUTES = 116.4
+TOTAL_OPENING_UTC = datetime.fromisoformat("2026-10-26T06:22:00+00:00")
+
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Make bundled dashboard images available."""
@@ -46,11 +50,16 @@ class Tracker:
         self._transition_lock = asyncio.Lock()
         self.unsub_checkpoint = None
         self.legacy = {}
+        self.total_opening = None
         self.pending_end = None
 
     async def load(self):
         data = await self.store.async_load() or {}
         self.sessions = data.get("sessions", [])
+        self.total_opening = data.get("total_opening") or {
+            "minutes": TOTAL_OPENING_MINUTES,
+            "at": TOTAL_OPENING_UTC.isoformat(),
+        }
         self.active = None
         self.pending_end = None
         # Only a genuinely new store may import the setup snapshot.
@@ -80,6 +89,10 @@ class Tracker:
                 self.sessions = self.sessions[-2000:]
             await self.persist()
 
+        # Save the opening balance on upgrade as well as on first setup.
+        if "total_opening" not in data:
+            await self.persist()
+
         state = self.hass.states.get(self.entity_id)
         if state and state.state == "playing":
             await self.start(
@@ -101,7 +114,8 @@ class Tracker:
     async def persist(self):
         await self.store.async_save(
             {"sessions": self.sessions, "active": self.active,
-             "legacy": self.legacy, "initialized": True}
+             "legacy": self.legacy, "initialized": True,
+             "total_opening": self.total_opening}
         )
 
     async def checkpoint(self, _now):
@@ -179,6 +193,25 @@ class Tracker:
     def notify(self):
         for listener in list(self.listeners):
             listener()
+
+    def total_minutes(self):
+        """Lifetime minutes: confirmed opening balance plus non-overlapping new time."""
+        opening = self.total_opening or {
+            "minutes": TOTAL_OPENING_MINUTES,
+            "at": TOTAL_OPENING_UTC.isoformat(),
+        }
+        boundary = dt_util.as_utc(datetime.fromisoformat(opening["at"]))
+        now = dt_util.utcnow()
+        seconds = 0.0
+        for session in self.sessions:
+            start = dt_util.as_utc(datetime.fromisoformat(session["start"]))
+            end = dt_util.as_utc(datetime.fromisoformat(session["end"]))
+            seconds += max(0.0, (min(end, now) - max(start, boundary)).total_seconds())
+        if self.active:
+            start = dt_util.as_utc(datetime.fromisoformat(self.active["start"]))
+            end = self.pending_end or now
+            seconds += max(0.0, (end - max(start, boundary)).total_seconds())
+        return round(float(opening["minutes"]) + seconds / 60, 1)
 
     def minutes(self, period):
         """Sum overlapping session time, clipping at the local period boundary.
