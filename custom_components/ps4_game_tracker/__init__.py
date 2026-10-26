@@ -192,6 +192,41 @@ class Tracker:
         for listener in list(self.listeners):
             listener()
 
+    def period_history(self):
+        """Completed-session totals grouped by local calendar periods.
+
+        Legacy aggregate snapshots are excluded: their underlying dated sessions
+        are unknown and assigning them to a specific day would be misleading.
+        """
+        from collections import defaultdict
+
+        tz = dt_util.get_default_time_zone()
+        groups = {key: defaultdict(float) for key in ("days", "weeks", "months", "years")}
+        now = dt_util.utcnow()
+        for session in self.sessions:
+            start = dt_util.as_utc(datetime.fromisoformat(session["start"]))
+            end = min(dt_util.as_utc(datetime.fromisoformat(session["end"])), now)
+            cursor = start
+            while cursor < end:
+                local = cursor.astimezone(tz)
+                next_midnight = datetime.combine(
+                    local.date() + timedelta(days=1), datetime.min.time()
+                ).replace(tzinfo=tz)
+                segment_end = min(end, dt_util.as_utc(next_midnight))
+                if segment_end <= cursor:
+                    break
+                seconds = (segment_end - cursor).total_seconds()
+                iso_year, iso_week, _ = local.isocalendar()
+                groups["days"][local.date().isoformat()] += seconds
+                groups["weeks"][f"{iso_year}-W{iso_week:02d}"] += seconds
+                groups["months"][local.strftime("%Y-%m")] += seconds
+                groups["years"][str(local.year)] += seconds
+                cursor = segment_end
+        return {
+            name: {key: round(seconds / 60, 2) for key, seconds in sorted(values.items())}
+            for name, values in groups.items()
+        }
+
     def total_minutes(self):
         """Lifetime minutes: confirmed opening balance plus non-overlapping new time."""
         opening = self.total_opening
