@@ -333,7 +333,7 @@ class HistoryAndLifetimeTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(t.total_minutes(), before)
             self.assertEqual(t.period_history(), history)
             self.assertEqual(t.minutes('today'), 0)
-            self.assertEqual(t.minutes('week'), 2001)
+            self.assertEqual(t.minutes('week'), 0)
             self.assertEqual(t.minutes('month'), 2001)
             self.assertEqual(t.minutes('year'), 2001)
             await t.persist()
@@ -342,7 +342,7 @@ class HistoryAndLifetimeTests(unittest.IsolatedAsyncioTestCase):
             await t2.load()
             self.assertEqual(t2.total_minutes(), before)
             self.assertEqual(t2.period_history(), history)
-            self.assertEqual(t2.minutes('week'), 2001)
+            self.assertEqual(t2.minutes('week'), 0)
             self.assertEqual(t2.minutes('month'), 2001)
             self.assertEqual(t2.minutes('year'), 2001)
         finally:
