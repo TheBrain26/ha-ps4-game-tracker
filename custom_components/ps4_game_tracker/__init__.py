@@ -311,6 +311,12 @@ class Tracker:
         boundary = dt_util.as_utc(start_local)
         now_utc = dt_util.utcnow()
         total_seconds = baseline_minutes(self.legacy, today, period) * 60
+        # Archived sessions also count toward the current period.
+        # Sum daily buckets only, avoiding double counting aggregate buckets.
+        for day, seconds in self.archived_periods.get("days", {}).items():
+            archived_date = datetime.fromisoformat(day).date()
+            if first <= archived_date <= today:
+                total_seconds += seconds
 
         for session in self.sessions:
             started = dt_util.as_utc(
