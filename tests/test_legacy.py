@@ -323,8 +323,9 @@ class HistoryAndLifetimeTests(unittest.IsolatedAsyncioTestCase):
             'end': (start + timedelta(minutes=i+1)).isoformat(),
             'minutes': 1,
         } for i in range(2001)]
-        old_utcnow = clock.utcnow
+        old_utcnow, old_now = clock.utcnow, clock.now
         clock.utcnow = lambda: datetime(2026, 10, 27, tzinfo=timezone.utc)
+        clock.now = lambda: datetime(2026, 10, 27, 1, tzinfo=TZ)
         try:
             before = t.total_minutes()
             history = t.period_history()
@@ -346,7 +347,7 @@ class HistoryAndLifetimeTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(t2.minutes('month'), 2001)
             self.assertEqual(t2.minutes('year'), 2001)
         finally:
-            clock.utcnow = old_utcnow
+            clock.utcnow, clock.now = old_utcnow, old_now
 
 if __name__ == '__main__':
     unittest.main()
