@@ -21,10 +21,6 @@ from .legacy import baseline_minutes
 
 PLATFORMS = ["sensor", "binary_sensor"]
 
-# Confirmed existing annual total on 26 October 2026; includes all earlier sessions.
-TOTAL_OPENING_MINUTES = 116.4
-TOTAL_OPENING_UTC = datetime.fromisoformat("2026-10-26T06:22:00+00:00")
-
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Make bundled dashboard images available."""
@@ -56,10 +52,7 @@ class Tracker:
     async def load(self):
         data = await self.store.async_load() or {}
         self.sessions = data.get("sessions", [])
-        self.total_opening = data.get("total_opening") or {
-            "minutes": TOTAL_OPENING_MINUTES,
-            "at": TOTAL_OPENING_UTC.isoformat(),
-        }
+        self.total_opening = data.get("total_opening")
         self.active = None
         self.pending_end = None
         # Only a genuinely new store may import the setup snapshot.
@@ -89,8 +82,13 @@ class Tracker:
                 self.sessions = self.sessions[-2000:]
             await self.persist()
 
-        # Save the opening balance on upgrade as well as on first setup.
-        if "total_opening" not in data:
+        # Snapshot this installation's actual annual counter once on upgrade.
+        # This avoids embedding any user's personal total in shared source code.
+        if self.total_opening is None:
+            self.total_opening = {
+                "minutes": self.minutes("year"),
+                "at": dt_util.utcnow().isoformat(),
+            }
             await self.persist()
 
         state = self.hass.states.get(self.entity_id)
@@ -196,10 +194,9 @@ class Tracker:
 
     def total_minutes(self):
         """Lifetime minutes: confirmed opening balance plus non-overlapping new time."""
-        opening = self.total_opening or {
-            "minutes": TOTAL_OPENING_MINUTES,
-            "at": TOTAL_OPENING_UTC.isoformat(),
-        }
+        opening = self.total_opening
+        if opening is None:
+            return self.minutes("year")
         boundary = dt_util.as_utc(datetime.fromisoformat(opening["at"]))
         now = dt_util.utcnow()
         seconds = 0.0
