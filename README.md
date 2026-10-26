@@ -32,6 +32,7 @@ Die optionale Übernahme vorhandener Helfer ist bei der ersten Einrichtung mögl
   - Mushroom
   - vertical-stack-in-card
   - card-mod für die zusätzliche Gestaltung
+  - Optional: eine PlayStation-Network-(PSN-)Integration, die Trophäen-Sensoren und gegebenenfalls das Spielcover über den ausgewählten Mediaplayer bereitstellt
 
 Die Integration wertet den Zustand des ausgewählten Mediaplayers aus. Sie ersetzt nicht die zugrunde liegende PlayStation-4-Integration.
 
@@ -85,6 +86,8 @@ Vor der Verwendung:
 2. Die Entitäts-IDs `sensor.ps4_game_tracker_...` mit den tatsächlich erzeugten Entitäten der eigenen Installation abgleichen.
 3. Auch `binary_sensor.ps4_game_tracker_spiel_aktiv` mit der eigenen Entität abgleichen.
 4. Die vier Beispiel-Entitäten `sensor.deine_ps4_..._trophaen` durch eigene Trophäen-Sensoren ersetzen oder den optionalen Trophäen-Block entfernen.
+
+**Optionale PlayStation-Network-Integration:** Für die Trophäenanzeige wird zusätzlich eine passende PlayStation-Network-(PSN-)Integration benötigt, die die vier Trophäen-Sensoren bereitstellt. Das Spielcover wird in der Dashboardvorlage aus dem Attribut `entity_picture` des ausgewählten PS4-Mediaplayers geladen. Dieses Attribut muss vom Mediaplayer bzw. seiner zugrunde liegenden Integration bereitgestellt werden; falls es fehlt, wird das Platzhalterbild angezeigt. Die PS4-Game-Tracker-Integration selbst liefert weder Trophäen noch Spielcover. **Die Spielzeiterfassung funktioniert unabhängig davon.**
 
 Trophäen-Sensoren werden vom PS4 Game Tracker nicht bereitgestellt. Die Vorlage enthält keine persönlichen Wanstebude-Entitätsnamen. Das Platzhalterbild wird unter `/ps4_game_tracker/ps4_platzhalter.png` mitgeliefert. Die Anzeige der fünf Sitzungen begrenzt nur das Dashboard; der Sensor stellt die letzten 20 von maximal 2.000 gespeicherten Sitzungen bereit.
 
