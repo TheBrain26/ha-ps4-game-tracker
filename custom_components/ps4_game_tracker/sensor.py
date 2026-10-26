@@ -84,5 +84,6 @@ class HistorySensor(BaseSensor):
             "legacy_history": self.tracker.legacy.get("history", ""),
             "legacy_imported_at": self.tracker.legacy.get("captured_at"),
             "legacy_last_end": self.tracker.legacy.get("last_end"),
+            "period_history": self.tracker.period_history(),
         }
 
