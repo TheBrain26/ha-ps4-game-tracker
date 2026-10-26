@@ -311,5 +311,35 @@ class HistoryAndLifetimeTests(unittest.IsolatedAsyncioTestCase):
         await t2.load()
         self.assertEqual(t2.total_minutes(), 121.4)
 
+
+    async def test_compaction_preserves_lifetime_and_history_after_restart(self):
+        t = make_tracker(False)
+        await t.load()
+        t.total_opening = {'minutes': 116.4, 'at': datetime(2026, 10, 23, tzinfo=timezone.utc).isoformat()}
+        start = datetime(2026, 10, 24, 4, tzinfo=timezone.utc)
+        t.sessions = [{
+            'title': 'Stray',
+            'start': (start + timedelta(minutes=i)).isoformat(),
+            'end': (start + timedelta(minutes=i+1)).isoformat(),
+            'minutes': 1,
+        } for i in range(2001)]
+        old_utcnow = clock.utcnow
+        clock.utcnow = lambda: datetime(2026, 10, 27, tzinfo=timezone.utc)
+        try:
+            before = t.total_minutes()
+            history = t.period_history()
+            t.archive_excess_sessions()
+            self.assertEqual(len(t.sessions), 2000)
+            self.assertEqual(t.total_minutes(), before)
+            self.assertEqual(t.period_history(), history)
+            await t.persist()
+            t2 = make_tracker(False)
+            t2.store.data = copy.deepcopy(t.store.data)
+            await t2.load()
+            self.assertEqual(t2.total_minutes(), before)
+            self.assertEqual(t2.period_history(), history)
+        finally:
+            clock.utcnow = old_utcnow
+
 if __name__ == '__main__':
     unittest.main()
