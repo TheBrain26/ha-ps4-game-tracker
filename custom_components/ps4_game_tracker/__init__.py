@@ -47,12 +47,16 @@ class Tracker:
         self.unsub_checkpoint = None
         self.legacy = {}
         self.total_opening = None
+        self.archived_seconds = 0.0
+        self.archived_periods = {"days": {}, "weeks": {}, "months": {}, "years": {}}
         self.pending_end = None
 
     async def load(self):
         data = await self.store.async_load() or {}
         self.sessions = data.get("sessions", [])
         self.total_opening = data.get("total_opening")
+        self.archived_seconds = float(data.get("archived_seconds", 0))
+        self.archived_periods = data.get("archived_periods") or {"days": {}, "weeks": {}, "months": {}, "years": {}}
         self.active = None
         self.pending_end = None
         # Only a genuinely new store may import the setup snapshot.
@@ -79,7 +83,7 @@ class Tracker:
                         ),
                     }
                 )
-                self.sessions = self.sessions[-2000:]
+                self.archive_excess_sessions()
             await self.persist()
 
         # Snapshot this installation's actual annual counter once on upgrade.
@@ -113,7 +117,9 @@ class Tracker:
         await self.store.async_save(
             {"sessions": self.sessions, "active": self.active,
              "legacy": self.legacy, "initialized": True,
-             "total_opening": self.total_opening}
+             "total_opening": self.total_opening,
+             "archived_seconds": self.archived_seconds,
+             "archived_periods": self.archived_periods}
         )
 
     async def checkpoint(self, _now):
@@ -146,7 +152,7 @@ class Tracker:
                 ),
             }
         )
-        self.sessions = self.sessions[-2000:]
+        self.archive_excess_sessions()
         self.active = None
         self.pending_end = None
         await self.persist()
@@ -192,6 +198,38 @@ class Tracker:
         for listener in list(self.listeners):
             listener()
 
+    def archive_excess_sessions(self):
+        """Compact old sessions without losing their historical totals."""
+        excess = max(0, len(self.sessions) - 2000)
+        if not excess:
+            return
+        from collections import defaultdict
+
+        tz = dt_util.get_default_time_zone()
+        for session in self.sessions[:excess]:
+            start = dt_util.as_utc(datetime.fromisoformat(session["start"]))
+            end = dt_util.as_utc(datetime.fromisoformat(session["end"]))
+            if self.total_opening:
+                opening = dt_util.as_utc(datetime.fromisoformat(self.total_opening["at"]))
+                self.archived_seconds += max(0, (end - max(start, opening)).total_seconds())
+            cursor = start
+            while cursor < end:
+                local = cursor.astimezone(tz)
+                midnight = datetime.combine(local.date() + timedelta(days=1), datetime.min.time()).replace(tzinfo=tz)
+                stop = min(end, dt_util.as_utc(midnight))
+                if stop <= cursor:
+                    break
+                seconds = (stop - cursor).total_seconds()
+                iso_year, iso_week, _ = local.isocalendar()
+                keys = {"days": local.date().isoformat(),
+                        "weeks": f"{iso_year}-W{iso_week:02d}",
+                        "months": local.strftime("%Y-%m"), "years": str(local.year)}
+                for group, key in keys.items():
+                    bucket = self.archived_periods.setdefault(group, {})
+                    bucket[key] = bucket.get(key, 0) + seconds
+                cursor = stop
+        self.sessions = self.sessions[excess:]
+
     def period_history(self):
         """Completed-session totals grouped by local calendar periods.
 
@@ -222,6 +260,9 @@ class Tracker:
                 groups["months"][local.strftime("%Y-%m")] += seconds
                 groups["years"][str(local.year)] += seconds
                 cursor = segment_end
+        for group, values in self.archived_periods.items():
+            for key, seconds in values.items():
+                groups[group][key] += seconds
         return {
             name: {key: round(seconds / 60, 2) for key, seconds in sorted(values.items())}
             for name, values in groups.items()
@@ -234,7 +275,7 @@ class Tracker:
             return self.minutes("year")
         boundary = dt_util.as_utc(datetime.fromisoformat(opening["at"]))
         now = dt_util.utcnow()
-        seconds = 0.0
+        seconds = self.archived_seconds
         for session in self.sessions:
             start = dt_util.as_utc(datetime.fromisoformat(session["start"]))
             end = dt_util.as_utc(datetime.fromisoformat(session["end"]))
