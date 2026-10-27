@@ -2,7 +2,7 @@
 
 Benutzerdefinierte Home-Assistant-Integration zur Erfassung von PlayStation-4-Spielsitzungen und Spielzeiten – mit einer optionalen Dashboardvorlage.
 
-> **Vorabversion.** Einrichtung, Helferübernahme, Coverwechsel, Spielwechsel und Sitzungsabschluss wurden in einer Home-Assistant-Installation praktisch erprobt. Weitere Konfigurationen und Grenzfälle sind noch zu testen. Alte Erfassungs- und Reset-Automationen nach der Übernahme deaktivieren; Helfer zunächst aufbewahren.
+> **Vorabversion.** Installation, Bildbereitstellung, Helferübernahme, Spielwechsel, Wiederherstellung nach Neustarts und der Umgang mit vorübergehender Nichterreichbarkeit wurden in einer Home-Assistant-Installation praktisch erprobt. Die abschließende Prüfung der Zeitraumwechsel und Zeitumstellungen steht noch aus. Alte Erfassungs- und Reset-Automationen nach der Übernahme deaktivieren; Helfer zunächst aufbewahren.
 
 ## Funktionsumfang
 
@@ -19,11 +19,11 @@ Benutzerdefinierte Home-Assistant-Integration zur Erfassung von PlayStation-4-Sp
 - Aufteilung der Spielzeit an Tages-, Wochen-, Monats- und Jahresgrenzen
 - Mitgeliefertes Platzhalterbild
 - Dashboardvorlage mit neutralen Beispiel-Entitäten
-- HACS-Metadaten und automatische Prüfungen der Python-Syntax und JSON-Dateien
+- HACS-Metadaten und automatisierte Regressionstests mit pytest und GitHub Actions
 
 Zeiten, in denen Home Assistant ausgeschaltet ist, werden **nicht mitgezählt**.
 
-Die optionale Übernahme vorhandener Helfer ist bei der ersten Einrichtung möglich. Umfassende Integrationstests im laufenden Home Assistant stehen weiterhin aus.
+Die optionale Übernahme vorhandener Helfer ist bei der ersten Einrichtung möglich und wurde in einer laufenden Home-Assistant-Installation erfolgreich getestet. Weitere Konfigurationen können von der getesteten Umgebung abweichen.
 
 ## Voraussetzungen
 
@@ -126,7 +126,7 @@ image: /ps4_game_tracker/ps4_platzhalter.png
 
 Ein zusätzliches Kopieren des Bildes nach `/config/www/` ist dafür nicht erforderlich.
 
-Der Dateiname muss exakt `ps4_platzhalter.png` lauten. Die Bildbereitstellung muss noch im laufenden Home-Assistant-Betrieb getestet werden.
+Der Dateiname muss exakt `ps4_platzhalter.png` lauten. Die Bildbereitstellung wurde im laufenden Home-Assistant-Betrieb erfolgreich getestet.
 
 ## Erfassung von Spielsitzungen
 
@@ -142,17 +142,20 @@ Bei `unknown`, `unavailable` oder fehlendem Player wird die Spielzeit sofort ein
 
 Überschreitet eine Sitzung eine lokale Tages-, Wochen-, Monats- oder Jahresgrenze, wird die Spielzeit auf die jeweiligen Zeiträume aufgeteilt.
 
-## Geplant vor einer stabilen Veröffentlichung
+## Abgeschlossen und geprüft
 
-- Installation und Bildbereitstellung im laufenden Home-Assistant-Betrieb prüfen
-- Wiederherstellung nach Neustarts, Spielwechsel und vorübergehende Nichterreichbarkeit testen
-- Spielzeitberechnung über Mitternacht und bei Zeitumstellungen prüfen
-- Automatisierte Tests mit Home Assistant ergänzen
-- Kompatibilität mit Home Assistant und HACS prüfen
-- Nutzungsrechte der mitgelieferten Bilder vor öffentlicher Verbreitung klären
-- Automatische Einrichtung einer Dashboardkarte prüfen
-- Optionale Auswahl vorhandener PSN-Trophäen-Sensoren prüfen
-- Übernahme vorhandener Helferwerte in einer laufenden Home-Assistant-Installation validieren
+- Installation und Bildbereitstellung im laufenden Home-Assistant-Betrieb
+- Wiederherstellung nach Neustarts, Spielwechsel und vorübergehender Nichterreichbarkeit
+- Kompatibilität mit der getesteten Home-Assistant-Installation und HACS
+- Einmalige Übernahme vorhandener Helferwerte in einer laufenden Home-Assistant-Installation
+- Bereitstellung einer manuellen YAML-Dashboardvorlage; keine automatische Dashboard-Einrichtung vorgesehen
+- PSN-Trophäen und Spielcover über eine separate PlayStation-Network-Integration; keine automatische Sensorauswahl vorgesehen
+- Herkunft des selbst generierten Platzhalterbilds geklärt; für weitere mitgelieferte Bildinhalte gelten gegebenenfalls eigene Rechte
+- Automatisierte Regressionstests mit pytest und GitHub Actions eingerichtet
+
+## Noch offen vor einer stabilen Veröffentlichung
+
+- [ ] **Zeitraumwechsel prüfen:** Spielzeitberechnung über Mitternacht, Wochen- und Monatswechsel sowie Sommer-/Winterzeit im Praxisbetrieb verifizieren. Der nächste gemeinsame Praxistest ist für den **2. November 2026** vorgesehen.
 
 ## Rechtlicher Hinweis
 
