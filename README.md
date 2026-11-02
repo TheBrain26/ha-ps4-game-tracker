@@ -1,8 +1,10 @@
 # PS4 Game Tracker für Home Assistant
 
+**Stabile Version 1.0.0**
+
 Benutzerdefinierte Home-Assistant-Integration zur Erfassung von PlayStation-4-Spielsitzungen und Spielzeiten – mit einer optionalen Dashboardvorlage.
 
-> **Vorabversion.** Installation, Bildbereitstellung, Helferübernahme, Spielwechsel, Wiederherstellung nach Neustarts und der Umgang mit vorübergehender Nichterreichbarkeit wurden in einer Home-Assistant-Installation praktisch erprobt. Die abschließende Prüfung der Zeitraumwechsel und Zeitumstellungen steht noch aus. Alte Erfassungs- und Reset-Automationen nach der Übernahme deaktivieren; Helfer zunächst aufbewahren.
+> **Stabile Version 1.0.0.** Installation, Bildbereitstellung, Helferübernahme, Spielwechsel, Wiederherstellung nach Neustarts und der Umgang mit vorübergehender Nichterreichbarkeit wurden in einer Home-Assistant-Installation praktisch erprobt. Die Wochen- und Monatswechsel wurden am 2. November 2026 kontrolliert. Die Berechnungslogik für weitere Zeitraumgrenzen und Zeitumstellungen ist durch automatisierte Tests abgesichert. Alte Erfassungs- und Reset-Automationen nach der Übernahme deaktivieren; Helfer zunächst aufbewahren.
 
 ## Funktionsumfang
 
@@ -36,7 +38,7 @@ Die optionale Übernahme vorhandener Helfer ist bei der ersten Einrichtung mögl
 
 Die Integration wertet den Zustand des ausgewählten Mediaplayers aus. Sie ersetzt nicht die zugrunde liegende PlayStation-4-Integration.
 
-## Manuelle Installation zum Testen
+## Manuelle Installation
 
 1. Das Repository als ZIP-Datei herunterladen und entpacken.
 2. Den vollständigen Ordner `custom_components/ps4_game_tracker` einschließlich des Unterordners `www` nach `/config/custom_components/` kopieren.
@@ -52,7 +54,7 @@ Die Datei `__init__.py` muss nach dem Kopieren unter folgendem Pfad liegen:
 /config/custom_components/ps4_game_tracker/__init__.py
 ```
 
-Bestehende PS4-Automationen und Helfer während der Testphase beibehalten.
+Bestehende PS4-Automationen und Helfer bis zur erfolgreichen Übernahme der Werte beibehalten.
 
 ## Einmalige Übernahme bisheriger Helfer
 
@@ -153,9 +155,11 @@ Bei `unknown`, `unavailable` oder fehlendem Player wird die Spielzeit sofort ein
 - Herkunft des selbst generierten Platzhalterbilds geklärt; für weitere mitgelieferte Bildinhalte gelten gegebenenfalls eigene Rechte
 - Automatisierte Regressionstests mit pytest und GitHub Actions eingerichtet
 
-## Noch offen vor einer stabilen Veröffentlichung
+## Abschlussprüfung für Version 1.0.0
 
-- [ ] **Zeitraumwechsel prüfen:** Spielzeitberechnung über Mitternacht, Wochen- und Monatswechsel sowie Sommer-/Winterzeit im Praxisbetrieb verifizieren. Der nächste gemeinsame Praxistest ist für den **2. November 2026** vorgesehen.
+- [x] **Zeitraumwechsel:** Wochen- und Monatswechsel am 2. November 2026 anhand der Home-Assistant-Spielzeitstatistiken kontrolliert. Die Berechnung über Mitternacht und Kalendergrenzen ist zusätzlich durch automatisierte Regressionstests abgedeckt. Zeitumstellungen werden anhand von Testfällen geprüft; ein gesonderter durchgängiger Live-Praxistest ist nicht dokumentiert.
+- [x] **Automatisierte Tests:** pytest-Regressionstests und GitHub Actions eingerichtet; die Prüfungen des zugehörigen Pull Requests wurden erfolgreich abgeschlossen.
+- [x] **Installation, Helferübernahme, Spielwechsel und Wiederherstellung:** im laufenden Home Assistant geprüft.
 
 ## Rechtlicher Hinweis
 
